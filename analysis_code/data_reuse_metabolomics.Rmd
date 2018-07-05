@@ -1,0 +1,655 @@
+---
+title: "Data Reuse in Metabolomics"
+author: "Analysis by Rachel Spicer, github:RASpicer"
+date: "03/06/2018"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: yes
+    theme: cerulean
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(tidyr)
+library(plotly)
+library(knitr)
+library(kableExtra)
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, tidy=TRUE, message = FALSE,fig.path = "figs/",fig.keep=TRUE)
+```
+# Data Processing 
+This RMarkdown contains the code used for analysis for the subsection <b>Data Reuse in Metabolomics</b> of Chapter 3 of the thesis <b>Fit for purpose? A metascientific analysis of metabolomics data in public repositories</b>. 
+
+## Functions
+This sections contains functions that are used for processing the reuse data.
+```{r functions}
+# Functions
+# Extract which studies have been reused
+ReusedStudies <- function(x){
+  Studies <- as.character(x$`Study(-ies)`)
+  Studies <- unlist(strsplit(Studies, ","))
+  # remove instances where a single study is not referenced
+  Studies <- Studies[!grepl("-", Studies)]
+  Studies <- Studies[!grepl("All", Studies)]
+  Studies <- Studies[!grepl("GNPS", Studies)]
+  return(Studies)
+}
+
+# Produce an ordered frequency table of the number of reuses per study
+UniqueStudiesCount <- function(x){
+  Studies <- ReusedStudies(x)
+  # Produce a frequency table of the number of reuses per study
+  UniqueStudiesCount <- as.data.frame(table(Studies))
+  # Order by Frequency of reuse
+  UniqueStudiesCountOrdered <- UniqueStudiesCount[order(-UniqueStudiesCount$Freq),]
+  return(UniqueStudiesCountOrdered)
+}
+
+#  Find the count of MetaboLights studies being reused
+MetaboLightsReuse <- function(x){
+  MetaboLightsC <- x[grepl("MTBLS", x)]
+  MetaboLightsCount <- as.data.frame(table(MetaboLightsC))
+  MetaboLightsCount <- MetaboLightsCount[order(-MetaboLightsCount$Freq),]
+  MetaboLightsCount$Repository <- rep("MetaboLights", nrow(MetaboLightsCount))
+  colnames(MetaboLightsCount) <- c("Study", "Frequency", "Repository")
+  return(MetaboLightsCount)
+}
+
+#  Find the count of Metabolomics Workbench studies being reused
+MWReuse <- function(x){
+  MetabolomicsWorkbenchC <- x[grepl("ST000", x)]
+  MetabolomicsWorkbenchCount <- as.data.frame(table(MetabolomicsWorkbenchC))
+  MetabolomicsWorkbenchCount <- MetabolomicsWorkbenchCount[order(-MetabolomicsWorkbenchCount$Freq),]
+  MetabolomicsWorkbenchCount$Repository <- rep("Metabolomics Workbench", nrow(MetabolomicsWorkbenchCount))
+  colnames(MetabolomicsWorkbenchCount) <- c("Study", "Frequency", "Repository")
+  return(MetabolomicsWorkbenchCount)
+}
+
+#  Find the count of GNPS studies being reused
+GNPSReuse <- function(x){
+  GNPSC <-  x[grepl("MSV", x)]
+  GNPSCount <- as.data.frame(table(GNPSC))
+  GNPSCount <- GNPSCount[order(-GNPSCount$Freq),]
+  GNPSCount$Repository <- rep("GNPS", nrow(GNPSCount))
+  colnames(GNPSCount) <- c("Study", "Frequency", "Repository")
+  return(GNPSCount)
+}
+
+# Combine the amount of reuse per repository into a single data frame
+# Requires input of the number of GNPS, MetaboLights and Metabolomics Workbench studies which have not been reused
+CombStudies <- function(Studylist, GNPS, ML, MW){
+  GNPSs <- GNPSReuse(Studylist)
+  MLs <- MetaboLightsReuse(Studylist)
+  MWs <- MWReuse(Studylist)
+  AllStudies <- rbind(GNPSs, MLs, MWs)
+  MLnr <- data.frame(Study = rep("Study", ML), Frequency = rep(0, ML), Repository = rep('MetaboLights'))
+  # MW 609 -  nrow(MetabolomicsWorkbenchCount) = 364
+  MWnr <- data.frame(Study = rep("Study", MW), Frequency = rep(0, MW), Repository = rep('Metabolomics Workbench'))
+  # GNPS 688 - nrow(GNPSCount) = 604
+  GNPSnr <- data.frame(Study = rep("Study", GNPS), Frequency = rep(0, GNPS), Repository = rep('GNPS'))
+  # Combine into single dataframe
+  AllStudies <- rbind(AllStudies, MLnr, MWnr, GNPSnr)
+  AllStudies$Repository <- as.factor(AllStudies$Repository)
+  levels(AllStudies$Repository) <- gsub(" ", "\n", levels(AllStudies$Repository))
+  return(AllStudies)
+}
+
+# Create data frame of the percentage of reuse at each frequency
+PerReuse <- function(x){
+  # The number of studies with each frequency of reuse
+  Per0 <- nrow(x[x$Frequency == 0,])/nrow(x) * 100
+  Per1 <- nrow(x[x$Frequency == 1,])/nrow(x) * 100
+  Per2 <- nrow(x[x$Frequency == 2,])/nrow(x) * 100
+  Per3 <- nrow(x[x$Frequency == 3,])/nrow(x) * 100
+  Per4 <- nrow(x[x$Frequency == 4,])/nrow(x) * 100
+  df <- data.frame("FrequencyofReuse" = c(0,1,2,3,4), "Percentage" = c(Per0,Per1,Per2,Per3,Per4))
+  return(df)
+}
+
+# Create a data frame of the reuse per repository and the reuse across repositories
+PerReuseRepository <- function(x){
+  GNPS <- x[x$Repository == "GNPS",]
+  ML <- x[x$Repository == "MetaboLights",]
+  MW <- x[x$Repository == "Metabolomics\nWorkbench",]
+  GNPSPer <- PerReuse(GNPS)
+  MLPer <- PerReuse(ML)
+  MWPer <- PerReuse(MW)
+  AllPer <- PerReuse(x)
+  df = cbind(GNPSPer, MLPer[,2], MWPer[,2], AllPer[,2])
+  colnames(df) <- c("Frequency", "GNPS", "MetaboLights", "Metabolomics Workbench","All Studies")
+  return(df)
+}
+
+# Percentage of studies published in each year that have been reused
+# Requires input of list of studies that have been reused and all studies in repository
+AgeReuse <- function(Repos, ReStud){
+  # Reused studies
+  Reused <- Repos[Repos$StudyID %in% ReStud$Studies ,]
+  # Not reused studies
+  Not <- Repos[!Repos$StudyID %in% ReStud$Studies ,]
+  # Publication Year of studies that have been reused
+  ReusedAge <- as.data.frame(table(Reused$Year))
+  # Publication Year of studies that have not been reused
+  NotAge <- as.data.frame(table(Not$Year))
+  df <- cbind(ReusedAge,NotAge[1:nrow(ReusedAge),2])
+  colnames(df) <- c("Year", "Reused", "Not")
+  # Calculate percentage of studies reused per year
+  df$Percentage <- round(df$Reused/(df$Reused+df$Not)*100, 2)
+  # Remove frequency columns
+  df <- df[,-(2:3)]
+  return(df)
+}
+```
+
+## Reuse per Year
+
+Calculate the number of publications that reuse data from each repository per year.
+```{r dataprocessing}
+# Load Reuse data
+DataReuse <- read.csv("../data/DataReuseMetabolomics.csv", check.names = FALSE)
+DataReuse$Year <- as.factor(DataReuse$Year)
+
+# Convert data re-use per year to a factor (including 0 for the year 2012)
+DataReuse$Year <- factor(DataReuse$Year, levels = c("2012",levels(DataReuse$Year)))
+# Find the frequency of data reuse per year
+DataReuseYear <- as.data.frame(table(DataReuse$Year))
+colnames(DataReuseYear) <- c("Year","Frequency")
+DataReuseYear$Repository <- rep("All")
+
+# Count number of reuses per repository
+# MetaboLights
+MLNo <- DataReuse[grepl("MetaboLights", DataReuse$Repository),]
+# Metabolomics Workbench
+MWNo <- DataReuse[grepl("Metabolomics Workbench", DataReuse$Repository),]
+# GNPS
+GNPSNo <-  DataReuse[grepl("GNPS", DataReuse$Repository),]
+
+# Create contigency tables of the frequency of reuse per year
+# adding a level for the year prior to any examples of reuse for plotting
+# MetaboLights
+MLYear <- as.data.frame(table(MLNo$Year))
+colnames(MLYear) <- c("Year","Frequency")
+MLYear$Repository <- rep("MetaboLights")
+MLYear$Year <- as.factor(MLYear$Year)
+MLYear$Year <- factor(MLYear$Year, levels = c("2012",levels(MLYear$Year)))
+# Metabolomics Workbench
+MWYear <- as.data.frame(table(MWNo$Year))
+colnames(MWYear) <- c("Year","Frequency")
+MWYear$Repository <- rep("Metabolomics Workbench")
+MWYear$Year <- as.factor(MWYear$Year)
+MWYear$Year <- factor(MWYear$Year, levels = c("2016",levels(MWYear$Year)))
+# GNPS
+GNPSYear <- as.data.frame(table(GNPSNo$Year))
+colnames(GNPSYear) <- c("Year","Frequency")
+GNPSYear$Repository <- rep("GNPS")
+GNPSYear$Year <- as.factor(GNPSYear$Year)
+GNPSYear$Year <- factor(GNPSYear$Year, levels = c("2015",levels(GNPSYear$Year)))
+
+# Recombine data into single data frame
+Freqperyear <- rbind(DataReuseYear, MLYear, MWYear, GNPSYear)
+Freqperyear$Repository <- as.factor(Freqperyear$Repository)
+
+# Remove 2018 for ploting
+Y2018 <- grepl("2018",Freqperyear$Year)
+No2018 <- Freqperyear[!Y2018,]
+```
+
+## Reuse per Study
+
+Calculate the frequency of reuse of each study.
+
+```{r reuseperstudy}
+# Find the total number of studies being reused (including reuse in Spicer et al. 2018)
+TotalUniqueStudies <- ReusedStudies(DataReuse)
+
+# As of 15/2/18 there are 329 MetaboLghts studies, 614 Metabolomics Workbench studies and 691 GNPS studies
+# GNPS 691 - nrow(GNPSCount) = 606
+# ML 332 - nrow(MetaboLightsCount) = 187
+# MW 614 -  nrow(MWCount) = 369
+AllStudies <- CombStudies(TotalUniqueStudies, 606, 187, 369)
+
+# Find the percentage reuse at each frequency across all repositories
+Reuseper <- PerReuseRepository(AllStudies)
+# melt data for ploting
+Reuseperg <- melt(Reuseper, "Frequency")
+colnames(Reuseperg) <- c("Frequency", "Repository","Percentage")
+Reuseperg$Frequency <- factor(Reuseperg$Frequency, levels = c("4","3","2","1","0"))
+levels(Reuseperg$Repository) <- gsub(" ", "\n", levels(Reuseperg$Repository))
+
+# Find the total number of studies being reused (excluding reuse in Spicer et al. 2018)
+TotalUniqueStudiesnoSpicer <- ReusedStudies(DataReuse[!grepl("Spicer", DataReuse$`Author(-s)`),])
+
+# As of 15/2/18 there are 329 MetaboLghts studies, 614 Metabolomics Workbench studies and 691 GNPS studies
+# GNPS 691 - nrow(GNPSCountnoSpicer) = 606
+# ML 329 - nrow(MetaboLightsCountnoSpicer) = 275
+# MW 614 -  nrow(MWCountnoSpicer) = 592
+AllStudiesnospicer <- CombStudies(TotalUniqueStudiesnoSpicer, 606, 275, 592)
+
+# Find the percentage reuse at each frequency across all repositories
+Reusepernospicer <- PerReuseRepository(AllStudiesnospicer)
+# melt data for ploting
+Reusepernospicerg <- melt(Reusepernospicer, "Frequency")
+colnames(Reusepernospicerg) <- c("Frequency", "Repository","Percentage")
+Reusepernospicerg$Frequency <- factor(Reusepernospicerg$Frequency, levels = c("4","3","2","1","0"))
+levels(Reusepernospicerg$Repository) <- gsub(" ", "\n", levels(Reusepernospicerg$Repository))
+```
+
+## Same Authors
+
+Studies were examined to see whether they reused data produced by the same set of authors, submitters or study owners. This is important as one of the most common reasons researchers cite for not sharing data is the fear that they will be able to generate less publications from their data, and other researchers will scoop them.
+
+Percentage of studies that reuse data that share at least one author/submitter/study owner with the original study:
+```{r sameauth}
+# Calculate percentage of studies where the original authors have reused their own data
+SameAuth <- round(sum(DataReuse$`Same Group`)/(nrow(DataReuse)) * 100, digits = 2)
+SameAuth
+```
+
+## Time until Reuse
+Calculate the time between data being made public and its reuse. The average number of years is:
+```{r time}
+# Load repository data 
+# MetaboLights
+ML <- read.csv("../data/MLStudiesTime.csv", check.names = FALSE, stringsAsFactors = FALSE)
+ML$Year <- format(as.Date(ML$StudyPublicationDate,"%d/%m/%y"),"%Y")
+# Metabolomics Workbench
+MW <- read.csv("../data/MWStudiesTime.csv", check.names = FALSE, stringsAsFactors = FALSE)
+MW$Year <- format(as.Date(MW$ReleaseDate,"%d/%m/%Y"),"%Y")
+# GNPS
+GNPS <- read.csv("../data/GNPSStudiesTime.csv", check.names = FALSE, stringsAsFactors = FALSE)
+GNPS$Year <- format(as.Date(GNPS$`Upload Date`, "%b. %d,%Y"),"%Y")
+
+# Split DataReuse by study, but maintain details of reuse
+UniqueStudiesReuse <- DataReuse %>% 
+  mutate(`Study(-ies)` = strsplit(as.character(`Study(-ies)`), ",")) %>% 
+  unnest(`Study(-ies)`)
+# rename colname `Study(-ies)` to StudyID for joining
+colnames(UniqueStudiesReuse)[9] <- "StudyID"
+# rename year to ReuseYear
+colnames(UniqueStudiesReuse)[3] <- "ReuseYear"
+
+# Create data frames of just StudyID and Year
+MLSY <- as.data.frame(cbind(ML[,1], ML[,7]))
+MWSY <- as.data.frame(cbind(MW[,1], MW[,10]))
+GNPSSY <- as.data.frame(cbind(GNPS[,2], GNPS[,10]))
+# join data frames
+StIDY <- rbind(MLSY,MWSY,GNPSSY)
+colnames(StIDY) <- c("StudyID", "Year")
+
+# add year to studies
+UniqueStudiesReuseYear <- left_join(UniqueStudiesReuse, StIDY, by = "StudyID")
+# Convert years from factor to numeric
+UniqueStudiesReuseYear$Year <- as.numeric(as.character(UniqueStudiesReuseYear$Year))
+UniqueStudiesReuseYear$ReuseYear <- as.numeric(as.character(UniqueStudiesReuseYear$ReuseYear))
+# Calculate time between data being published and reuse 
+UniqueStudiesReuseYear$Time2Reuse <- UniqueStudiesReuseYear$ReuseYear - UniqueStudiesReuseYear$Year
+
+# Create contigency table
+Time2Reuse <- as.data.frame(table(UniqueStudiesReuseYear$Time2Reuse))
+colnames(Time2Reuse) <- c("Years", "Frequency")
+Time2Reuse$Percentage <- Time2Reuse$Frequency/sum(Time2Reuse$Frequency)*100
+
+# Average time until reuse 
+AveTime <- round(mean(UniqueStudiesReuseYear$Time2Reuse, na.rm = T), 2)
+AveTime
+```
+
+
+## Time Data made Public
+
+Calculate the time until data reuse per study in each repository.
+
+```{r age}
+# Unique Studies that have been reused + Frequency
+AllStudiesReused <- UniqueStudiesCount(DataReuse)
+
+# Percentage reused Metabolights studies
+MLAge <- AgeReuse(ML,AllStudiesReused)
+
+# Percentage reused Metabolomics Workbench studies
+MWAge <- AgeReuse(MW,AllStudiesReused)
+
+# Percentage reused Metabolomics Workbench studies
+GNPSAge <- AgeReuse(GNPS,AllStudiesReused)
+
+# Create contigency tables of the frequency of reuse per year
+# adding a level for the year prior to any examples of reuse for plotting
+# MetaboLights
+MLAge$Repository <- rep("MetaboLights")
+MLAge$Year <- as.factor(MLAge$Year)
+# Metabolomics Workbench 
+MWAge$Repository <- rep("Metabolomics Workbench")
+MWAge$Year <- as.factor(MWAge$Year)
+# GNPS
+GNPSAge$Repository <- rep("GNPS")
+GNPSAge$Year <- as.factor(GNPSAge$Year)
+
+# Recombine data into single data frame
+PerAge <- rbind(MLAge, MWAge, GNPSAge)
+PerAge$Repository <- as.factor(PerAge$Repository)
+# Add row showing 0 reuse for GNPS in 2017
+GNPS2017 <- c("2017", 0.00, "GNPS")
+PerAge <- rbind(PerAge,GNPS2017)
+PerAge$Percentage <- as.numeric(PerAge$Percentage)
+
+# Reuse excluding Spicer et al, (2017)
+NoSpicerReused <- UniqueStudiesCount(DataReuse[!grepl("Spicer", DataReuse$`Author(-s)`),])
+
+# Percentage reused Metabolights studies
+MLNSAge <- AgeReuse(ML,NoSpicerReused)
+
+# Percentage reused Metabolomics Workbench studies
+MWNSAge <- AgeReuse(MW,NoSpicerReused)
+
+# Percentage reused Metabolomics Workbench studies
+GNPSNSAge <- AgeReuse(GNPS,NoSpicerReused)
+
+# Create contigency tables of the frequency of reuse per year
+# adding a level for the year prior to any examples of reuse for plotting
+# MetaboLights
+MLNSAge$Repository <- rep("MetaboLights")
+MLNSAge$Year <- as.factor(MLNSAge$Year)
+# Metabolomics Workbench 
+MWNSAge$Repository <- rep("Metabolomics Workbench")
+MWNSAge$Year <- as.factor(MWNSAge$Year)
+# GNPS
+GNPSNSAge$Repository <- rep("GNPS")
+GNPSNSAge$Year <- as.factor(GNPSNSAge$Year)
+
+# Recombine data into single data frame
+PerNSAge <- rbind(MLNSAge, MWNSAge, GNPSNSAge)
+PerNSAge$Repository <- as.factor(PerNSAge$Repository)
+# Add row showing 0 reuse for Metabolomics Workbench and GNPS in 2017
+MW2017 <- c("2017", 0.00, "Metabolomics Workbench")
+PerNSAge <- rbind(PerNSAge,MW2017,GNPS2017)
+PerNSAge$Percentage <- as.numeric(PerNSAge$Percentage)
+```
+
+Calculate the number of studies released per repository per year.
+
+```{r perreuseperyear}
+# Average deposition date of MetaboLights studies
+MLSDT <- round(mean(as.numeric(ML$Year), na.rm = T), 2)
+
+# Average deposition date of Metabolomics Workbench studies
+MWSDT <- round(mean(as.numeric(MW$Year), na.rm = T), 2)
+
+# Average deposition date of GNPS studies
+GNPSDT <- round(mean(as.numeric(GNPS$Year), na.rm = T), 2)
+
+# Average deposition date of all studies
+Years <- cbind(ML$Year, MW$Year, GNPS$Year)
+YearsDT <- round(mean(as.numeric(Years), na.rm = T), 2)
+
+# Distribution of age of studies
+# MetaboLights
+MLSYear <- as.data.frame(table(ML$Year))
+colnames(MLSYear) <- c("Year", "Frequency")
+MLSYear$Repository <- rep("MetaboLights")
+# Metabolomics Workbench
+MWSYear <- as.data.frame(table(MW$Year))
+colnames(MWSYear) <- c("Year", "Frequency")
+MWSYear$Repository <- rep("Metabolomics Workbench")
+# GNPS
+GNPSSYear <- as.data.frame(table(GNPS$Year))
+colnames(GNPSSYear) <- c("Year", "Frequency")
+GNPSSYear$Repository <- rep("GNPS")
+# All studies
+AllSYears <-  as.data.frame(table(Years))
+colnames(AllSYears) <- c("Year", "Frequency")
+AllSYears$Repository <- rep("All")
+
+# Recombine data into single data frame
+StudYear <- rbind(AllSYears, MLSYear, MWSYear, GNPSSYear)
+StudYear$Repository <- as.factor(StudYear$Repository)
+
+# Remove 2018, 2019 and 2050 for ploting
+y2018 <- grepl("2018",StudYear$Year)
+Till2017 <- StudYear[!y2018,]
+y2019 <- grepl("2019",Till2017$Year)
+Till2017 <- Till2017[!y2019,]
+y2050 <- grepl("2050",Till2017$Year)
+Till2017 <- Till2017[!y2050,]
+
+# Add zero years for plotting
+MW0 <- data.frame(Year = 2012, Frequency = 0, Repository = "Metabolomics Workbench")
+GNPS0 <- data.frame(Year = 2013, Frequency = 0, Repository = "GNPS")
+
+# recombine data frames
+Till2017$Year <- factor(Till2017$Year, levels = c("2011",levels(Till2017$Year)))
+Till2017 <- rbind(Till2017, MW0, GNPS0)
+```
+
+# Tables
+
+## Table 3.7. Studies that reuse public available metabolomics data
+
+
+```{r datalevels, results = 'asis'}
+Paper <- DataReuse$Link
+kable(cbind(DataReuse[,1:4], Paper), caption = "Studies that reuse public available metabolomics data, as of 15^th^ February 2018. The table shows articles that reuse publicly available data, the repository(-ies) that were the source of the data, the year the article was published and classification of how the data were re-used.") %>%
+  kable_styling(full_width = F, bootstrap_options = c("hover", "responsive"))
+```
+
+# Figures
+Code that was used to generate raw figures. Figures were further processed in Adobe Illustrator.
+
+## Figure 3.10. The reuse of metabolomics data over time. 
+Data reuse across all repositories is shown in red, GNPS reuse is shown in blue, MetaboLights reuse is shown in green and Metabolomics Workbench is shown in purple. The launch year of each repository is also highlighted.
+
+```{r reuseperyear, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
+ggplot(No2018, aes(Year, Frequency, color=Repository, group=Repository))  + 
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 20)) +
+  geom_segment(aes(x = 1, y = 0, xend = 1, yend = 18), linetype="dashed", color = "black", size=0.2) +
+  geom_segment(aes(x = 2, y = 0, xend = 2, yend = 17), linetype="dashed", color = "black", size=0.2) +
+  geom_segment(aes(x = 3, y = 0, xend = 3, yend = 18), linetype="dashed", color = "black", size=0.3) +
+  theme_bw() +
+  theme(
+    legend.position="top",
+    axis.text = element_text(colour = "black"),
+    axis.line.x = element_line(color="black", size = 0.5),
+    axis.line.y = element_line(color="black", size = 0.5),
+    # Remove gridlines and borders
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.title.align=0.5) +
+  scale_color_manual(values = c("#e41a1c","#377eb8", "#4daf4a", "#984ea3")) +
+  guides(color = guide_legend(title.position = "top")) +
+  annotate("text", x = 1, y = 19, label = "MetaboLights \n launched") +
+  annotate("text", x = 2, y = 18.5, label = "Metabolomics \n Workbench \n launched") +
+  annotate("text", x = 3, y = 19, label = "GNPS \n launched")
+```
+
+## Figure 3.11A. The percentage of studies reused at each frequency including all studies
+
+The percentage of studies reused at each frequency: 0, 1, 2, 3, or 4 times, as of 15^th^ February 2018, including reuse in all studies.
+```{r reuseperstudyall, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
+ggplot(Reuseperg, aes(x=Repository, y=Percentage, fill=Frequency))  +
+  geom_bar(colour="black", stat="identity", width = 0.7) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 101)) +
+  scale_fill_manual(values = c('#0868ac','#43a2ca','#7bccc4',"#bae4bc",'#f0f9e8')) +
+  ylab("Frequency of Reuse per Study (%)")+
+  theme_bw() +
+  theme(axis.text = element_text(colour = "black"),
+        legend.text.align = 0,
+        #legend.text = element_text(face = "italic"),
+        axis.line.x = element_line(color="black", size = 0.5),
+        axis.line.y = element_line(color="black", size = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) 
+```
+
+## Figure 3.11B. The percentage of studies reused at each frequency excluding Spicer *et al.* (2017)
+
+The percentage of studies reused at each frequency: 0, 1, 2, 3, or 4 times, as of 15^th^ February 2018 excluding reuse by Spicer \textit{et al.} (2017).
+
+```{r reuseperstudynospicer, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
+ggplot(Reusepernospicerg, aes(x=Repository, y=Percentage, fill=Frequency))  +
+  geom_bar(colour="black", stat="identity", width = 0.7) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 101)) +
+  scale_fill_manual(values = c('#0868ac','#43a2ca','#7bccc4',"#bae4bc",'#f0f9e8')) +
+  ylab("Frequency of Reuse per Study (%)")+
+  theme_bw() +
+  theme(axis.text = element_text(colour = "black"),
+        legend.text.align = 0,
+        #legend.text = element_text(face = "italic"),
+        axis.line.x = element_line(color="black", size = 0.5),
+        axis.line.y = element_line(color="black", size = 0.5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank()) 
+```
+
+## Figure 3.12A. The frequency of metabolomics studies released per year
+
+The total number of studies released per year is shown in red, GNPS studies are in blue, MetaboLights are in green and Metabolomics Workbench are in purple.
+
+```{r sAge, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
+ggplot(Till2017, aes(Year, Frequency, color=Repository, group=Repository))  + 
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1000)) +
+  theme_bw() +
+  theme(
+    legend.position="top",
+    axis.text = element_text(colour = "black"),
+    axis.line.x = element_line(color="black", size = 0.5),
+    axis.line.y = element_line(color="black", size = 0.5),
+    # Remove gridlines and borders
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.title.align=0.5) +
+  scale_color_manual(values = c("#e41a1c","#377eb8", "#4daf4a", "#984ea3")) +
+  guides(color = guide_legend(title.position = "top"))
+```
+
+
+## Figure 3.12B. The frequency of publicly available studies and time until data reuse
+
+```{r time2reuse, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
+ggplot(Time2Reuse, aes(Years, Percentage, group = 1))  + 
+  geom_line() +
+  geom_point() +
+  ylab("Percentage of Reused Studies") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 40)) +
+  theme_bw() +
+  theme(
+    legend.position="top",
+    axis.text = element_text(colour = "black"),
+    axis.line.x = element_line(color="black", size = 0.5),
+    axis.line.y = element_line(color="black", size = 0.5),
+    # Remove gridlines and borders
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.title.align=0.5)
+```
+
+
+## Supplementary Figure 1. Types of Reuse
+
+```{r reusetype, results = 'asis',  fig.align = "center"}
+# Extract the frequency of types of reuse
+TypeReuse <- as.data.frame(table(DataReuse$Classification))
+colnames(TypeReuse) <- c("Classification", "Frequency")
+TypeReuse$Percentage <- TypeReuse$Frequency/sum(TypeReuse$Frequency) * 100
+TypeReuseOrdered <- TypeReuse[order(-TypeReuse$Percentage),]
+
+colors <- c('rgb(211,94,96)', 'rgb(128,133,133)', 'rgb(144,103,167)', 'rgb(171,104,87)', 'rgb(114,147,203)')
+
+plot_ly(TypeReuseOrdered, labels = ~Classification, values = ~Percentage, type = 'pie',
+        textposition = 'inside',
+        textinfo = 'label+percent',
+        insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        text = ~paste(Frequency, "Studies"),
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+        #The 'pull' attribute can also be used to create space between the sectors
+        showlegend = FALSE) %>%
+  layout(title = 'Study Classification',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+## Supplementary Figure 2. The percentage of studies published per year that have been reused including all studies
+
+```{r timeall, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
+ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository))  + 
+  geom_line() +
+  geom_point() +
+  ylab("Reused Studies (%)") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
+  geom_segment(aes(x = 1, y = 0, xend = 1, yend = 49), linetype="dashed", color = "black", size=0.3) +
+  geom_segment(aes(x = 2, y = 0, xend = 2, yend = 49), linetype="dashed", color = "black", size=0.15) +
+  geom_segment(aes(x = 3, y = 0, xend = 3, yend = 22), linetype="dashed", color = "black", size=0.35) +
+  theme_bw() +
+  theme(
+    legend.position="top",
+    axis.text = element_text(colour = "black"),
+    axis.line.x = element_line(color="black", size = 0.5),
+    axis.line.y = element_line(color="black", size = 0.5),
+    # Remove gridlines and borders
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.title.align=0.5) +
+  scale_color_manual(values = c("#377eb8", "#4daf4a", "#984ea3")) +
+  guides(color = guide_legend(title.position = "top")) +
+  annotate("text", x = 1.5, y = 45, label = "MetaboLights \n launched") +
+  annotate("text", x = 2.55, y = 42.5, label = "Metabolomics \n Workbench \n launched") +
+  annotate("text", x = 3.35, y = 18, label = "GNPS \n launched")
+```
+
+## Supplementary Figure 3. The percentage of studies published per year that have been reused excluding Spicer *et al.* (2017)
+
+```{r timenospicer, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
+ggplot(PerNSAge, aes(Year, Percentage, color=Repository, group=Repository))  + 
+  geom_line() +
+  geom_point() +
+  ylab("Reused Studies (%)") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
+  geom_segment(aes(x = 1, y = 0, xend = 1, yend = 49), linetype="dashed", color = "black", size=0.3) +
+  geom_segment(aes(x = 2, y = 0, xend = 2, yend = 6), linetype="dashed", color = "black", size=0.1) +
+  geom_segment(aes(x = 3, y = 0, xend = 3, yend = 22), linetype="dashed", color = "black", size=0.35) +
+  theme_bw() +
+  theme(
+    legend.position="top",
+    axis.text = element_text(colour = "black"),
+    axis.line.x = element_line(color="black", size = 0.5),
+    axis.line.y = element_line(color="black", size = 0.5),
+    # Remove gridlines and borders
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.title.align=0.5) +
+  scale_color_manual(values = c("#377eb8", "#4daf4a", "#984ea3")) +
+  guides(color = guide_legend(title.position = "top")) +
+  annotate("text", x = 1, y = 56, label = "MetaboLights \n launched") +
+  annotate("text", x = 2, y = 16, label = "Metabolomics \n Workbench \n launched") +
+  annotate("text", x = 3, y = 30, label = "GNPS \n launched")
+```
+
+## Supplementary Table 1. The frequency of reuse per study
+```{r reusepers, results = 'asis'}
+ReuseStud <- UniqueStudiesCount(DataReuse)
+colnames(ReuseStud) <- c("Study", "Frequency")
+kable(ReuseStud, row.names = F) %>%
+  kable_styling(full_width = F)
+```
