@@ -438,13 +438,13 @@ kable(cbind(DataReuse[,1:4], Paper), caption = "Studies that reuse public availa
 # Figures
 Code that was used to generate raw figures. Figures were further processed in Adobe Illustrator.
 
-## Figure 3.10. The reuse of metabolomics data over time. 
-Data reuse across all repositories is shown in red, GNPS reuse is shown in blue, MetaboLights reuse is shown in green and Metabolomics Workbench is shown in purple. The launch year of each repository is also highlighted.
+## Figure 3.10. The number of articles that reuse metabolomics data over time. 
+Data reuse across all repositories is shown in red, GNPS reuse is shown in blue, MetaboLights reuse is shown in green and Metabolomics Workbench is shown in purple. Some articles reuse data from multiple repositories (both MetaboLights and Metabolomics Workbench), so the total number of articles that reuse metabolomics data per year is not the sum of the articles that reuse data from each repository per year. The launch year of each repository is also highlighted.
 
 ```{r reuseperyear, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
-ggplot(No2018, aes(Year, Frequency, color=Repository, group=Repository))  + 
+ggplot(No2018, aes(Year, Frequency, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 20)) +
   geom_segment(aes(x = 1, y = 0, xend = 1, yend = 18), linetype="dashed", color = "black", size=0.2) +
   geom_segment(aes(x = 2, y = 0, xend = 2, yend = 17), linetype="dashed", color = "black", size=0.2) +
@@ -461,7 +461,7 @@ ggplot(No2018, aes(Year, Frequency, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#e41a1c","#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#D55E00","#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top")) +
   annotate("text", x = 1, y = 19, label = "MetaboLights \n launched") +
   annotate("text", x = 2, y = 18.5, label = "Metabolomics \n Workbench \n launched") +
@@ -516,9 +516,9 @@ ggplot(Reusepernospicerg, aes(x=Repository, y=Percentage, fill=Frequency))  +
 The total number of studies released per year is shown in red, GNPS studies are in blue, MetaboLights are in green and Metabolomics Workbench are in purple.
 
 ```{r sAge, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
-ggplot(Till2017, aes(Year, Frequency, color=Repository, group=Repository))  + 
+ggplot(Till2017, aes(Year, Frequency, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 1000)) +
   theme_bw() +
   theme(
@@ -532,7 +532,7 @@ ggplot(Till2017, aes(Year, Frequency, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#e41a1c","#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#D55E00","#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top"))
 ```
 
@@ -589,9 +589,9 @@ plot_ly(TypeReuseOrdered, labels = ~Classification, values = ~Percentage, type =
 ## Supplementary Figure 2. The percentage of studies published per year that have been reused including all studies
 
 ```{r timeall, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
-ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository))  + 
+ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   ylab("Reused Studies (%)") +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
   geom_segment(aes(x = 1, y = 0, xend = 1, yend = 49), linetype="dashed", color = "black", size=0.3) +
@@ -609,7 +609,7 @@ ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top")) +
   annotate("text", x = 1.5, y = 45, label = "MetaboLights \n launched") +
   annotate("text", x = 2.55, y = 42.5, label = "Metabolomics \n Workbench \n launched") +
@@ -619,9 +619,9 @@ ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository))  +
 ## Supplementary Figure 3. The percentage of studies published per year that have been reused excluding Spicer *et al.* (2017)
 
 ```{r timenospicer, results = 'asis', fig.height = 5, fig.width = 7, fig.align = "center"}
-ggplot(PerNSAge, aes(Year, Percentage, color=Repository, group=Repository))  + 
+ggplot(PerNSAge, aes(Year, Percentage, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   ylab("Reused Studies (%)") +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
   geom_segment(aes(x = 1, y = 0, xend = 1, yend = 49), linetype="dashed", color = "black", size=0.3) +
@@ -639,7 +639,7 @@ ggplot(PerNSAge, aes(Year, Percentage, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top")) +
   annotate("text", x = 1, y = 56, label = "MetaboLights \n launched") +
   annotate("text", x = 2, y = 16, label = "Metabolomics \n Workbench \n launched") +

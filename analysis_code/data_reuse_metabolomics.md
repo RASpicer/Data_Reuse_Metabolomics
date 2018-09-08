@@ -703,14 +703,14 @@ kable(cbind(DataReuse[, 1:4], Paper), caption = "Studies that reuse public avail
 # Figures
 Code that was used to generate raw figures. Figures were further processed in Adobe Illustrator.
 
-## Figure 3.10. The reuse of metabolomics data over time. 
-Data reuse across all repositories is shown in red, GNPS reuse is shown in blue, MetaboLights reuse is shown in green and Metabolomics Workbench is shown in purple. The launch year of each repository is also highlighted.
+## Figure 3.10. The number of articles that reuse metabolomics data over time. 
+Data reuse across all repositories is shown in red, GNPS reuse is shown in blue, MetaboLights reuse is shown in green and Metabolomics Workbench is shown in purple. Some articles reuse data from multiple repositories (both MetaboLights and Metabolomics Workbench), so the total number of articles that reuse metabolomics data per year is not the sum of the articles that reuse data from each repository per year. The launch year of each repository is also highlighted.
 
 
 ```r
-ggplot(No2018, aes(Year, Frequency, color=Repository, group=Repository))  + 
+ggplot(No2018, aes(Year, Frequency, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 20)) +
   geom_segment(aes(x = 1, y = 0, xend = 1, yend = 18), linetype="dashed", color = "black", size=0.2) +
   geom_segment(aes(x = 2, y = 0, xend = 2, yend = 17), linetype="dashed", color = "black", size=0.2) +
@@ -727,7 +727,7 @@ ggplot(No2018, aes(Year, Frequency, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#e41a1c","#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#D55E00","#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top")) +
   annotate("text", x = 1, y = 19, label = "MetaboLights \n launched") +
   annotate("text", x = 2, y = 18.5, label = "Metabolomics \n Workbench \n launched") +
@@ -791,9 +791,9 @@ The total number of studies released per year is shown in red, GNPS studies are 
 
 
 ```r
-ggplot(Till2017, aes(Year, Frequency, color=Repository, group=Repository))  + 
+ggplot(Till2017, aes(Year, Frequency, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 1000)) +
   theme_bw() +
   theme(
@@ -807,7 +807,7 @@ ggplot(Till2017, aes(Year, Frequency, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#e41a1c","#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#D55E00","#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top"))
 ```
 
@@ -867,16 +867,16 @@ plot_ly(TypeReuseOrdered, labels = ~Classification, values = ~Percentage, type =
          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
 ```
 
-<!--html_preserve--><div id="13e1f4415da7d" style="width:672px;height:480px;" class="plotly html-widget"></div>
-<script type="application/json" data-for="13e1f4415da7d">{"x":{"visdat":{"13e1f3bdd650f":["function () ","plotlyVisDat"]},"cur_data":"13e1f3bdd650f","attrs":{"13e1f3bdd650f":{"labels":{},"values":{},"textposition":"inside","textinfo":"label+percent","insidetextfont":{"color":"#FFFFFF"},"hoverinfo":"text","text":{},"marker":{"colors":["rgb(211,94,96)","rgb(128,133,133)","rgb(144,103,167)","rgb(171,104,87)","rgb(114,147,203)"],"line":{"color":"#FFFFFF","width":1}},"showlegend":false,"alpha":1,"sizes":[10,100],"type":"pie"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"title":"Study Classification","xaxis":{"showgrid":false,"zeroline":false,"showticklabels":false},"yaxis":{"showgrid":false,"zeroline":false,"showticklabels":false},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":[{"name":"Collaborate","icon":{"width":1000,"ascent":500,"descent":-50,"path":"M487 375c7-10 9-23 5-36l-79-259c-3-12-11-23-22-31-11-8-22-12-35-12l-263 0c-15 0-29 5-43 15-13 10-23 23-28 37-5 13-5 25-1 37 0 0 0 3 1 7 1 5 1 8 1 11 0 2 0 4-1 6 0 3-1 5-1 6 1 2 2 4 3 6 1 2 2 4 4 6 2 3 4 5 5 7 5 7 9 16 13 26 4 10 7 19 9 26 0 2 0 5 0 9-1 4-1 6 0 8 0 2 2 5 4 8 3 3 5 5 5 7 4 6 8 15 12 26 4 11 7 19 7 26 1 1 0 4 0 9-1 4-1 7 0 8 1 2 3 5 6 8 4 4 6 6 6 7 4 5 8 13 13 24 4 11 7 20 7 28 1 1 0 4 0 7-1 3-1 6-1 7 0 2 1 4 3 6 1 1 3 4 5 6 2 3 3 5 5 6 1 2 3 5 4 9 2 3 3 7 5 10 1 3 2 6 4 10 2 4 4 7 6 9 2 3 4 5 7 7 3 2 7 3 11 3 3 0 8 0 13-1l0-1c7 2 12 2 14 2l218 0c14 0 25-5 32-16 8-10 10-23 6-37l-79-259c-7-22-13-37-20-43-7-7-19-10-37-10l-248 0c-5 0-9-2-11-5-2-3-2-7 0-12 4-13 18-20 41-20l264 0c5 0 10 2 16 5 5 3 8 6 10 11l85 282c2 5 2 10 2 17 7-3 13-7 17-13z m-304 0c-1-3-1-5 0-7 1-1 3-2 6-2l174 0c2 0 4 1 7 2 2 2 4 4 5 7l6 18c0 3 0 5-1 7-1 1-3 2-6 2l-173 0c-3 0-5-1-8-2-2-2-4-4-4-7z m-24-73c-1-3-1-5 0-7 2-2 3-2 6-2l174 0c2 0 5 0 7 2 3 2 4 4 5 7l6 18c1 2 0 5-1 6-1 2-3 3-5 3l-174 0c-3 0-5-1-7-3-3-1-4-4-5-6z"},"click":"function(gd) { \n        // is this being viewed in RStudio?\n        if (location.search == '?viewer_pane=1') {\n          alert('To learn about plotly for collaboration, visit:\\n https://cpsievert.github.io/plotly_book/plot-ly-for-collaboration.html');\n        } else {\n          window.open('https://cpsievert.github.io/plotly_book/plot-ly-for-collaboration.html', '_blank');\n        }\n      }"}],"cloud":false},"data":[{"labels":["Methods","Software","Resource","Metadata","Biological studies"],"values":[35.2941176470588,29.4117647058824,17.6470588235294,11.7647058823529,5.88235294117647],"textposition":["inside","inside","inside","inside","inside"],"textinfo":"label+percent","insidetextfont":{"color":"#FFFFFF"},"hoverinfo":["text","text","text","text","text"],"text":["12 Studies","10 Studies","6 Studies","4 Studies","2 Studies"],"marker":{"fillcolor":"rgba(31,119,180,1)","color":"rgba(31,119,180,1)","colors":["rgb(211,94,96)","rgb(128,133,133)","rgb(144,103,167)","rgb(171,104,87)","rgb(114,147,203)"],"line":{"color":"#FFFFFF","width":1}},"showlegend":false,"type":"pie","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1}},"base_url":"https://plot.ly"},"evals":["config.modeBarButtonsToAdd.0.click"],"jsHooks":{"render":[{"code":"function(el, x) { var ctConfig = crosstalk.var('plotlyCrosstalkOpts').set({\"on\":\"plotly_click\",\"persistent\":false,\"dynamic\":false,\"selectize\":false,\"opacityDim\":0.2,\"selected\":{\"opacity\":1}}); }","data":null}]}}</script><!--/html_preserve-->
+<!--html_preserve--><div id="14e91a291ecd" style="width:672px;height:480px;" class="plotly html-widget"></div>
+<script type="application/json" data-for="14e91a291ecd">{"x":{"visdat":{"14e97e68eb31":["function () ","plotlyVisDat"]},"cur_data":"14e97e68eb31","attrs":{"14e97e68eb31":{"labels":{},"values":{},"textposition":"inside","textinfo":"label+percent","insidetextfont":{"color":"#FFFFFF"},"hoverinfo":"text","text":{},"marker":{"colors":["rgb(211,94,96)","rgb(128,133,133)","rgb(144,103,167)","rgb(171,104,87)","rgb(114,147,203)"],"line":{"color":"#FFFFFF","width":1}},"showlegend":false,"alpha":1,"sizes":[10,100],"type":"pie"}},"layout":{"margin":{"b":40,"l":60,"t":25,"r":10},"title":"Study Classification","xaxis":{"showgrid":false,"zeroline":false,"showticklabels":false},"yaxis":{"showgrid":false,"zeroline":false,"showticklabels":false},"hovermode":"closest","showlegend":false},"source":"A","config":{"modeBarButtonsToAdd":[{"name":"Collaborate","icon":{"width":1000,"ascent":500,"descent":-50,"path":"M487 375c7-10 9-23 5-36l-79-259c-3-12-11-23-22-31-11-8-22-12-35-12l-263 0c-15 0-29 5-43 15-13 10-23 23-28 37-5 13-5 25-1 37 0 0 0 3 1 7 1 5 1 8 1 11 0 2 0 4-1 6 0 3-1 5-1 6 1 2 2 4 3 6 1 2 2 4 4 6 2 3 4 5 5 7 5 7 9 16 13 26 4 10 7 19 9 26 0 2 0 5 0 9-1 4-1 6 0 8 0 2 2 5 4 8 3 3 5 5 5 7 4 6 8 15 12 26 4 11 7 19 7 26 1 1 0 4 0 9-1 4-1 7 0 8 1 2 3 5 6 8 4 4 6 6 6 7 4 5 8 13 13 24 4 11 7 20 7 28 1 1 0 4 0 7-1 3-1 6-1 7 0 2 1 4 3 6 1 1 3 4 5 6 2 3 3 5 5 6 1 2 3 5 4 9 2 3 3 7 5 10 1 3 2 6 4 10 2 4 4 7 6 9 2 3 4 5 7 7 3 2 7 3 11 3 3 0 8 0 13-1l0-1c7 2 12 2 14 2l218 0c14 0 25-5 32-16 8-10 10-23 6-37l-79-259c-7-22-13-37-20-43-7-7-19-10-37-10l-248 0c-5 0-9-2-11-5-2-3-2-7 0-12 4-13 18-20 41-20l264 0c5 0 10 2 16 5 5 3 8 6 10 11l85 282c2 5 2 10 2 17 7-3 13-7 17-13z m-304 0c-1-3-1-5 0-7 1-1 3-2 6-2l174 0c2 0 4 1 7 2 2 2 4 4 5 7l6 18c0 3 0 5-1 7-1 1-3 2-6 2l-173 0c-3 0-5-1-8-2-2-2-4-4-4-7z m-24-73c-1-3-1-5 0-7 2-2 3-2 6-2l174 0c2 0 5 0 7 2 3 2 4 4 5 7l6 18c1 2 0 5-1 6-1 2-3 3-5 3l-174 0c-3 0-5-1-7-3-3-1-4-4-5-6z"},"click":"function(gd) { \n        // is this being viewed in RStudio?\n        if (location.search == '?viewer_pane=1') {\n          alert('To learn about plotly for collaboration, visit:\\n https://cpsievert.github.io/plotly_book/plot-ly-for-collaboration.html');\n        } else {\n          window.open('https://cpsievert.github.io/plotly_book/plot-ly-for-collaboration.html', '_blank');\n        }\n      }"}],"cloud":false},"data":[{"labels":["Methods","Software","Resource","Metadata","Biological studies"],"values":[35.2941176470588,29.4117647058824,17.6470588235294,11.7647058823529,5.88235294117647],"textposition":["inside","inside","inside","inside","inside"],"textinfo":"label+percent","insidetextfont":{"color":"#FFFFFF"},"hoverinfo":["text","text","text","text","text"],"text":["12 Studies","10 Studies","6 Studies","4 Studies","2 Studies"],"marker":{"fillcolor":"rgba(31,119,180,1)","color":"rgba(31,119,180,1)","colors":["rgb(211,94,96)","rgb(128,133,133)","rgb(144,103,167)","rgb(171,104,87)","rgb(114,147,203)"],"line":{"color":"#FFFFFF","width":1}},"showlegend":false,"type":"pie","frame":null}],"highlight":{"on":"plotly_click","persistent":false,"dynamic":false,"selectize":false,"opacityDim":0.2,"selected":{"opacity":1}},"base_url":"https://plot.ly"},"evals":["config.modeBarButtonsToAdd.0.click"],"jsHooks":{"render":[{"code":"function(el, x) { var ctConfig = crosstalk.var('plotlyCrosstalkOpts').set({\"on\":\"plotly_click\",\"persistent\":false,\"dynamic\":false,\"selectize\":false,\"opacityDim\":0.2,\"selected\":{\"opacity\":1}}); }","data":null}]}}</script><!--/html_preserve-->
 
 ## Supplementary Figure 2. The percentage of studies published per year that have been reused including all studies
 
 
 ```r
-ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository))  + 
+ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   ylab("Reused Studies (%)") +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
   geom_segment(aes(x = 1, y = 0, xend = 1, yend = 49), linetype="dashed", color = "black", size=0.3) +
@@ -894,7 +894,7 @@ ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top")) +
   annotate("text", x = 1.5, y = 45, label = "MetaboLights \n launched") +
   annotate("text", x = 2.55, y = 42.5, label = "Metabolomics \n Workbench \n launched") +
@@ -907,9 +907,9 @@ ggplot(PerAge, aes(Year, Percentage, color=Repository, group=Repository))  +
 
 
 ```r
-ggplot(PerNSAge, aes(Year, Percentage, color=Repository, group=Repository))  + 
+ggplot(PerNSAge, aes(Year, Percentage, color=Repository, group=Repository, shape=Repository))  + 
   geom_line() +
-  geom_point() +
+  geom_point(size = 3) +
   ylab("Reused Studies (%)") +
   scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
   geom_segment(aes(x = 1, y = 0, xend = 1, yend = 49), linetype="dashed", color = "black", size=0.3) +
@@ -927,7 +927,7 @@ ggplot(PerNSAge, aes(Year, Percentage, color=Repository, group=Repository))  +
     panel.border = element_blank(),
     panel.background = element_blank(),
     legend.title.align=0.5) +
-  scale_color_manual(values = c("#377eb8", "#4daf4a", "#984ea3")) +
+  scale_color_manual(values = c("#0072B2", "#009E73", "#CC79A7")) +
   guides(color = guide_legend(title.position = "top")) +
   annotate("text", x = 1, y = 56, label = "MetaboLights \n launched") +
   annotate("text", x = 2, y = 16, label = "Metabolomics \n Workbench \n launched") +
