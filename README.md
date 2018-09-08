@@ -12,5 +12,5 @@ All analysis was performed using [R version 3.3.2](https://cran.r-project.org/).
 Data_Reuse_Metabolomics/analysis_code/data_reuse_metabolomics.Rmd
 The analysis code can be found in [analysis-code/data_reuse_metabolomics.Rmd](https://github.com/RASpicer/Data_Reuse_Metabolomics/tree/master/analysis_code/data_reuse_metabolomics.Rmd). The R Markdown file was generated using [knitr version 1.17](https://cran.r-project.org/web/packages/knitr/index.html) and [kableExtra version 0.9.0](https://cran.r-project.org/web/packages/kableExtra/index.html). 
 
-The <b>html output</b> can be viewed on [rawgit](https://cdn.rawgit.com/RASpicer/Data_Reuse_Metabolomics/40fc77b0/analysis_code/data_reuse_metabolomics.html).
+The <b>html output</b> can be viewed on [rawgit](https://cdn.rawgit.com/RASpicer/Data_Reuse_Metabolomics/bf233c46/analysis_code/data_reuse_metabolomics.html).
  
